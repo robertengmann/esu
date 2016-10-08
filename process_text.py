@@ -2,7 +2,7 @@
 #!/usr/bin/env python
 import sys
 import itertools
-from nltk import pos_tag, sent_tokenize, word_tokenize, FreqDist
+from nltk import pos_tag, sent_tokenize, word_tokenize, FreqDist, ne_chunk_sents
 from nltk.collocations import BigramCollocationFinder
 from nltk.metrics import BigramAssocMeasures
 
@@ -22,6 +22,28 @@ def get_nouns(sentences):
     return nouns
 
 
+def get_named_entities(sentences):
+    def traverse(tree):
+        entity_names = []
+
+        if hasattr(tree, 'label') and tree.label:
+            if tree.label() == 'NE':
+                entity_names.append(' '.join([child[0] for child in tree]))
+            else:
+                for child in tree:
+                    entity_names.extend(traverse(child))
+
+        return entity_names
+
+    named_entities = []
+
+    for chunk in ne_chunk_sents(sentences, binary=True):
+        for entity in sorted(list(set([word for tree in chunk for word in traverse(tree)]))):
+            named_entities.append(entity)
+
+    return named_entities
+
+
 def get_bigram_keywords(nouns):
     finder = BigramCollocationFinder.from_words(nouns)
     scored = finder.score_ngrams(BigramAssocMeasures.raw_freq)
@@ -39,16 +61,23 @@ def get_noun_keywords(nouns):
     return noun_keywords
 
 
+def clean_keyword(keyword):
+    return keyword.title().replace("’S", "")
+
+
 def main(argv):
     corpus = open(argv[0], 'r').read()
 
     sentences = get_sentences(corpus)
     nouns = get_nouns(sentences)
 
+    named_entities = get_named_entities(sentences)
     bigram_keywords = get_bigram_keywords(nouns)
     noun_keywords = get_noun_keywords(nouns)
 
-    print('\n'.join(bigram_keywords + noun_keywords))
+    result_set = set([clean_keyword(k) for k in list(named_entities + bigram_keywords + noun_keywords)])
+
+    print('\n'.join(result_set))
 
 if __name__ == "__main__":
     main(sys.argv[1:])
