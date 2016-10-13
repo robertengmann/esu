@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/env python
+
+# https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html
+
 import sys
 import itertools
 from nltk import pos_tag, sent_tokenize, word_tokenize, FreqDist, ne_chunk_sents
@@ -55,11 +58,20 @@ def get_bigram_keywords(nouns):
 
 def get_noun_keywords(nouns):
     frequency_distribution = FreqDist(nouns)
-    frequency_limit = int(round(len(frequency_distribution) / 10))
+    frequency_limit = int(round(len(frequency_distribution) / 5))
     noun_keywords = [nk for nk in sorted(frequency_distribution, key=frequency_distribution.get, reverse=True)][:frequency_limit]
 
     return noun_keywords
 
+
+def get_ings(sentences):
+    ings = list(filter(lambda w: w[1][:3] == 'VBG', itertools.chain.from_iterable(sentences)))
+    ings = list(filter(lambda w: w[len(w)-3:] == 'ing', itertools.chain.from_iterable(ings)))
+    
+    ings = list(ings)
+
+    return ings
+    
 
 def clean_keyword(keyword):
     return keyword.title().replace("’S", "")
@@ -69,13 +81,14 @@ def main(argv):
     corpus = open(argv[0], 'r').read()
 
     sentences = get_sentences(corpus)
+    print(sentences)
+    ings = get_ings(sentences)
     nouns = get_nouns(sentences)
 
     named_entities = get_named_entities(sentences)
     bigram_keywords = get_bigram_keywords(nouns)
     noun_keywords = get_noun_keywords(nouns)
-
-    result_set = set([clean_keyword(k) for k in list(named_entities + bigram_keywords + noun_keywords)])
+    result_set = set([clean_keyword(k) for k in list(ings + named_entities + bigram_keywords + noun_keywords)])
 
     print('\n'.join(result_set))
 
