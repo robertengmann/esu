@@ -25,6 +25,13 @@ def get_nouns(sentences):
     return nouns
 
 
+def get_adjectives(sentences):
+    adjectives = list(filter(lambda w: w[1][:2] == 'JJ', itertools.chain.from_iterable(sentences)))
+    adjectives = list(zip(*adjectives))[0]
+
+    return adjectives
+
+
 def get_named_entities(sentences):
     def traverse(tree):
         entity_names = []
@@ -84,11 +91,12 @@ def main(argv):
     print(sentences)
     ings = get_ings(sentences)
     nouns = get_nouns(sentences)
+    adjectives = get_adjectives(sentences)
 
     named_entities = get_named_entities(sentences)
     bigram_keywords = get_bigram_keywords(nouns)
     noun_keywords = get_noun_keywords(nouns)
-    result_set = set([clean_keyword(k) for k in list(ings + named_entities + bigram_keywords + noun_keywords)])
+    result_set = set([clean_keyword(k) for k in list(adjectives)])
 
     print('\n'.join(result_set))
 
