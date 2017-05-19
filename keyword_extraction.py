@@ -19,7 +19,6 @@ class KeywordExtractor(object):
 
         return sentences
 
-
     def get_nouns(self, sentences):
         nouns = list(filter(lambda w: w[1][:2] == 'NN', itertools.chain.from_iterable(sentences)))
         
@@ -28,7 +27,6 @@ class KeywordExtractor(object):
 
         return nouns
 
-
     def get_adjectives(self, sentences):
         adjectives = list(filter(lambda w: w[1][:2] == 'JJ', itertools.chain.from_iterable(sentences)))
         
@@ -36,7 +34,6 @@ class KeywordExtractor(object):
             adjectives = list(zip(*adjectives))[0]
 
         return adjectives
-
 
     def get_named_entities(self, sentences):
         def traverse(tree):
@@ -59,7 +56,6 @@ class KeywordExtractor(object):
 
         return named_entities
 
-
     def get_bigram_keywords(self, nouns):
         bigram_keywords = []
         
@@ -72,7 +68,6 @@ class KeywordExtractor(object):
 
         return bigram_keywords
 
-
     def get_noun_keywords(self, nouns):
         frequency_distribution = FreqDist(nouns)
         frequency_limit = int(round(len(frequency_distribution) / 5))
@@ -80,14 +75,22 @@ class KeywordExtractor(object):
 
         return noun_keywords
 
-
     def get_ings(self, sentences):
         ings = list(filter(lambda w: w[1][:3] == 'VBG', itertools.chain.from_iterable(sentences)))
         ings = list(filter(lambda w: w[len(w)-3:] == 'ing', itertools.chain.from_iterable(ings)))
         ings = list(ings)
 
         return ings
+
+    def get_phrases(self, sentences):
+        phrases = []
+        for sentence in sentences:
+            for i in range(0, len(sentence)-1):
+                if sentence[i][1][:2] == 'JJ' and sentence[i+1][1][:2] == 'NN':
+                    phrase = "%s %s" % (sentence[i][0], sentence[i+1][0])
+                    phrases.append(phrase)
         
+        return phrases        
 
     def clean_keyword(self, keyword):
         ck = keyword.lower().replace("’S", "")
@@ -97,7 +100,6 @@ class KeywordExtractor(object):
         ck = ck.replace("\\", "")
         
         return ck
-
 
     def extract_keywords(self):
         self.corpus = re.sub('<[^<]+?>', '', self.corpus)
@@ -110,12 +112,13 @@ class KeywordExtractor(object):
         ings = self.get_ings(sentences)
         nouns = self.get_nouns(sentences)
         adjectives = self.get_adjectives(sentences)
+        phrases = self.get_phrases(sentences)
 
         named_entities = self.get_named_entities(sentences)
         bigram_keywords = self.get_bigram_keywords(nouns)
         noun_keywords = self.get_noun_keywords(nouns)
 
-        keywords = list(ings) + list(adjectives) + list(named_entities) + list(bigram_keywords) + list(noun_keywords) + list(named_entities)
+        keywords = list(ings) + list(named_entities) + list(bigram_keywords) + list(noun_keywords) + list(phrases)
 
         result_set = set([self.clean_keyword(k) for k in keywords])
 
